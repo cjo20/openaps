@@ -2,7 +2,6 @@
 from ConfigParser import SafeConfigParser
 import re
 
-
 class Config (SafeConfigParser):
   OPTCRE = re.compile(
           r'\s?(?P<option>[^:=\s][^:=]*)'       # very permissive!
@@ -13,7 +12,26 @@ class Config (SafeConfigParser):
           r'(?P<value>.*)$'                     # everything up to eol
           )
   def save (self):
-    with open('openaps.ini', 'wb') as configfile:
+    secrets = ['serial']
+
+    publicConfig = Config( )
+    privateConfig = Config( )
+
+    for section in self.sections():
+      publicConfig.add_section(section)
+      privateConfig.add_section(section)
+
+      for k,v in self.items(section):
+        if k in secrets:
+          privateConfig.set(section, k, v)
+        else:
+          publicConfig.set(section, k, v)
+    publicConfig.do_save('openaps.ini')
+    privateConfig.do_save('secret.ini')
+
+
+  def do_save(self, filename):
+    with open(filename, 'wb') as configfile:
       self.write(configfile)
   def add_device (self, device):
     section = device.section_name( )
@@ -27,8 +45,8 @@ class Config (SafeConfigParser):
   @classmethod
   def Read (klass, name=None, defaults=['openaps.ini', '~/.openaps.ini', '/etc/openaps/openaps.ini']):
     config = Config( )
-    if name:
-      config.read(name)
+    if name is not None:
+      config.read([name, 'secret.ini'])
     else:
       config.read(defaults)
     return config
