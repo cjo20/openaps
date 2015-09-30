@@ -2,6 +2,7 @@
 from ConfigParser import SafeConfigParser
 import re
 import os
+
 class Config (SafeConfigParser):
   OPTCRE = re.compile(
           r'\s?(?P<option>[^:=\s][^:=]*)'       # very permissive!
@@ -38,8 +39,11 @@ class Config (SafeConfigParser):
 
 
   def do_save(self, filename):
-    with open(filename, 'wb') as configfile:
+    with open(filename  + "_tmp", 'wb') as configfile:
       self.write(configfile)
+    os.remove(filename)
+    os.rename(filename + "_tmp", filename)
+
   def add_device (self, device):
     section = device.section_name( )
     self.add_section(section)
